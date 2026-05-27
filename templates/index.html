@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아파트 실거래가 트렌드 대시보드</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🏢</span>
+                <h1>Apt<span>Trend</span></h1>
+                <span class="badge badge-api">MOLIT API Live</span>
+            </div>
+            <div class="status-area">
+                <span class="status-indicator"></span>
+                <span class="status-text">서버 연결 완료</span>
+            </div>
+        </header>
+
+        <!-- Main Filter Panel -->
+        <section class="filter-section card">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="select-sido">시도</label>
+                    <select id="select-sido" class="form-control">
+                        <option value="">시도 선택</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="select-gugun">시군구</label>
+                    <select id="select-gugun" class="form-control" disabled>
+                        <option value="">시군구 선택</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="input-month">거래연월</label>
+                    <input type="month" id="input-month" class="form-control" value="2026-03">
+                </div>
+                <div class="filter-group filter-btn-group">
+                    <button id="btn-search" class="btn btn-primary">
+                        <span class="btn-icon">🔍</span> 조회하기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- View Tabs -->
+        <div class="view-tabs hidden" id="view-tabs">
+            <button class="tab-btn active" data-tab="charts">📊 차트 분석</button>
+            <button class="tab-btn" data-tab="map">🗺️ 지도 시각화</button>
+        </div>
+
+        <!-- Welcome / Loading State -->
+        <div id="loading-state" class="loading-container hidden">
+            <div class="spinner"></div>
+            <p>공공데이터포털에서 아파트 실거래 자료를 불러오는 중입니다...</p>
+        </div>
+
+        <div id="welcome-state" class="welcome-container">
+            <div class="welcome-icon">📊</div>
+            <h2>아파트 실거래가 정보 대시보드</h2>
+            <p>시도, 시군구, 거래연월을 선택하고 <strong>조회하기</strong> 버튼을 누르시면 실거래 데이터와 트렌드 차트를 확인하실 수 있습니다.</p>
+        </div>
+
+        <div id="error-state" class="error-container hidden">
+            <div class="error-icon">⚠️</div>
+            <h3 id="error-title">데이터를 불러올 수 없습니다</h3>
+            <p id="error-message">API 응답 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.</p>
+        </div>
+
+        <!-- Dashboard Content (Hidden by default, shown after loading data) -->
+        <main id="dashboard-content" class="dashboard-grid hidden">
+            
+            <!-- Stats Row -->
+            <section class="stats-row">
+                <!-- Stat Card 1 -->
+                <div class="stat-card card">
+                    <div class="stat-header">
+                        <span class="stat-title">총 거래량</span>
+                        <span class="stat-icon count-icon">📈</span>
+                    </div>
+                    <div class="stat-value" id="stat-total-count">-</div>
+                    <div class="stat-desc">해당 월에 체결된 실거래 건수</div>
+                </div>
+                
+                <!-- Stat Card 2 -->
+                <div class="stat-card card highlight-cyan">
+                    <div class="stat-header">
+                        <span class="stat-title">평균 거래가</span>
+                        <span class="stat-icon avg-icon">💵</span>
+                    </div>
+                    <div class="stat-value" id="stat-avg-price">-</div>
+                    <div class="stat-desc">조회 기간 평균 매매 금액</div>
+                </div>
+                
+                <!-- Stat Card 3 -->
+                <div class="stat-card card highlight-purple">
+                    <div class="stat-header">
+                        <span class="stat-title">최고 거래가</span>
+                        <span class="stat-icon max-icon">👑</span>
+                    </div>
+                    <div class="stat-value-sm" id="stat-max-price">-</div>
+                    <div class="stat-desc-apt" id="stat-max-apt">-</div>
+                </div>
+                
+                <!-- Stat Card 4 -->
+                <div class="stat-card card">
+                    <div class="stat-header">
+                        <span class="stat-title">최저 거래가</span>
+                        <span class="stat-icon min-icon">📉</span>
+                    </div>
+                    <div class="stat-value-sm" id="stat-min-price">-</div>
+                    <div class="stat-desc-apt" id="stat-min-apt">-</div>
+                </div>
+            </section>
+
+            <!-- Tab Content: Charts -->
+            <div id="tab-charts" class="tab-content active-content">
+                <!-- Charts Row -->
+                <section class="charts-row">
+                    <!-- Chart 1: Price vs Area Scatter -->
+                    <div class="chart-card card">
+                        <h3>평형별 실거래가 분포</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-scatter"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart 2: Daily Transaction Volume -->
+                    <div class="chart-card card">
+                        <h3>일자별 평균 거래가 및 거래량</h3>
+                        <div class="chart-container">
+                            <canvas id="chart-line"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Tab Content: Map -->
+            <div id="tab-map" class="tab-content">
+                <!-- Map Row -->
+                <section class="map-row card">
+                    <div id="map-container"></div>
+                    <div id="map-error-msg" class="map-placeholder-error hidden">
+                        <div class="placeholder-icon">🗺️</div>
+                        <h3>지도를 표시할 수 없습니다</h3>
+                        <p>카카오 지도 API 키가 설정되지 않았거나 올바르지 않습니다.</p>
+                        <p class="placeholder-sub">`.env` 파일에 올바른 `kakao_key`를 입력했는지 확인해 주세요.</p>
+                    </div>
+                </section>
+            </div>
+
+
+            <!-- Table & List Section -->
+            <section class="table-section card">
+                <div class="table-header">
+                    <div class="table-header-left">
+                        <h3>실거래 내역 상세 리스트</h3>
+                        <span class="results-count" id="table-results-count">0건의 결과</span>
+                    </div>
+                    <div class="table-header-right">
+                        <input type="text" id="input-search-apt" class="form-control table-search" placeholder="아파트 이름 검색...">
+                    </div>
+                </div>
+                
+                <div class="table-scroll-container">
+                    <table class="data-table" id="transaction-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 12%">계약일자</th>
+                                <th style="width: 15%">법정동</th>
+                                <th style="width: 30%">아파트 단지명</th>
+                                <th style="width: 15%">실거래가</th>
+                                <th style="width: 14%">전용면적 (평형)</th>
+                                <th style="width: 8%">층수</th>
+                                <th style="width: 10%">건축년도</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-table-body">
+                            <!-- Rows injected by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 AptTrend. 국토교통부 아파트매매 실거래자료 OpenAPI 활용</p>
+        </footer>
+    </div>
+
+    <!-- Kakao Maps SDK -->
+    {% if kakao_key %}
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_key }}&libraries=services"></script>
+    {% endif %}
+
+    <!-- Main JS -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
