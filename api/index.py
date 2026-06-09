@@ -6,11 +6,14 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template
 
-app = Flask(__name__)
+# Initialize Flask with template and static folders mapped to root
+app = Flask(__name__, 
+            template_folder='../templates', 
+            static_folder='../static')
 
-# Load API key from .env
+# Load API key from .env (mapped to parent folder of api)
 config = configparser.ConfigParser()
-config_path = os.path.join(os.path.dirname(__file__), '.env')
+config_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 config.read(config_path)
 
 try:
@@ -33,9 +36,7 @@ except (configparser.NoSectionError, configparser.NoOptionError):
             # 4. 환경변수 탐색
             KAKAO_MAP_API_KEY = os.environ.get('KAKAO_MAP_API_KEY') or os.environ.get('KAKAO_KEY')
 
-
 # Simple in-memory cache to save API request quotas
-# Cache key: (lawd_cd, deal_ymd), Value: json data
 api_cache = {}
 
 def format_price_korean(price_raw):
@@ -162,9 +163,9 @@ def index():
 
 @app.route("/api/sigungu")
 def get_sigungu():
-    # Read sigungu.json file and return it
     try:
-        sigungu_path = os.path.join(os.path.dirname(__file__), 'sigungu.json')
+        # Load sigungu.json mapped to parent folder of api
+        sigungu_path = os.path.join(os.path.dirname(__file__), '..', 'sigungu.json')
         with open(sigungu_path, 'r', encoding='utf-8') as f:
             import json
             data = json.load(f)
@@ -183,16 +184,13 @@ def get_transactions():
     if not lawd_cd or not deal_ymd:
         return jsonify({"error": "lawd_cd와 deal_ymd는 필수 파라미터입니다."}), 400
         
-    # Clear invalid letters from month input (e.g., hyphens in '2024-03' -> '202403')
     deal_ymd = deal_ymd.replace("-", "").strip()
     
-    # Check cache
     cache_key = (lawd_cd, deal_ymd)
     if cache_key in api_cache:
         print(f"Serving from cache: {cache_key}")
         return jsonify(api_cache[cache_key])
         
-    # Call Public Data API
     url = "http://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
     params = {
         "serviceKey": API_KEY,
@@ -210,7 +208,6 @@ def get_transactions():
             
         json_data = parse_xml_to_json(xml_data)
         
-        # Cache results if there is no error
         if "error" not in json_data:
             api_cache[cache_key] = json_data
             
