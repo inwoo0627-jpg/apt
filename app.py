@@ -18,6 +18,9 @@ try:
 except (configparser.NoSectionError, configparser.NoOptionError):
     API_KEY = os.environ.get('APT_KEY') or os.environ.get('API_KEY')
 
+if API_KEY:
+    API_KEY = API_KEY.strip().replace('"', '').replace("'", "")
+
 try:
     # 1. KAKAO 섹션의 js_key 우선 탐색
     KAKAO_MAP_API_KEY = config.get('KAKAO', 'js_key')
@@ -32,6 +35,9 @@ except (configparser.NoSectionError, configparser.NoOptionError):
         except (configparser.NoSectionError, configparser.NoOptionError):
             # 4. 환경변수 탐색
             KAKAO_MAP_API_KEY = os.environ.get('KAKAO_MAP_API_KEY') or os.environ.get('KAKAO_KEY') or os.environ.get('JS_KEY')
+
+if KAKAO_MAP_API_KEY:
+    KAKAO_MAP_API_KEY = KAKAO_MAP_API_KEY.strip().replace('"', '').replace("'", "")
 
 
 # Simple in-memory cache to save API request quotas
