@@ -167,6 +167,19 @@ def parse_xml_to_json(xml_content):
 def index():
     return render_template("index.html", kakao_key=KAKAO_MAP_API_KEY)
 
+@app.route("/api/debug")
+def debug_env():
+    import os
+    return jsonify({
+        "has_apt_key": API_KEY is not None,
+        "apt_key_len": len(API_KEY) if API_KEY else 0,
+        "has_kakao_key": KAKAO_MAP_API_KEY is not None,
+        "kakao_key_len": len(KAKAO_MAP_API_KEY) if KAKAO_MAP_API_KEY else 0,
+        "kakao_key_preview": KAKAO_MAP_API_KEY[:4] if KAKAO_MAP_API_KEY else "None",
+        "env_js_key_exists": "JS_KEY" in os.environ,
+        "env_js_key_len": len(os.environ.get("JS_KEY")) if os.environ.get("JS_KEY") else 0
+    })
+
 @app.route("/api/sigungu")
 def get_sigungu():
     try:
