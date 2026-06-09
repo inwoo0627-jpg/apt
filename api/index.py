@@ -34,7 +34,7 @@ except (configparser.NoSectionError, configparser.NoOptionError):
             KAKAO_MAP_API_KEY = config.get('APT', 'kakao_key')
         except (configparser.NoSectionError, configparser.NoOptionError):
             # 4. 환경변수 탐색
-            KAKAO_MAP_API_KEY = os.environ.get('KAKAO_MAP_API_KEY') or os.environ.get('KAKAO_KEY')
+            KAKAO_MAP_API_KEY = os.environ.get('KAKAO_MAP_API_KEY') or os.environ.get('KAKAO_KEY') or os.environ.get('JS_KEY')
 
 # Simple in-memory cache to save API request quotas
 api_cache = {}
